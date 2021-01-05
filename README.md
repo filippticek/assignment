@@ -4,7 +4,9 @@
 `docker run -it --rm -p 8080:8080 backend-server:latest`
 # Test app in /test folder:
 `cd test/`
+
 `go build`
+
 `./test`
 # Testing using curl:
 ## READ id=1
