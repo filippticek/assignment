@@ -1,21 +1,12 @@
 # First build container:
-
 `docker build -t backend-server .`
-
 # Run container:
-
 `docker run -it --rm -p 8080:8080 backend-server:latest`
-
 # Test app in /test folder:
-
 `cd test/`
-
 `go build`
-
 `./test`
-
 # Testing using curl:
-
 ## READ id=1
 `curl -v -X GET http://localhost:8080/1`
 ## READ *
