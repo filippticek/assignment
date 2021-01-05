@@ -19,6 +19,10 @@ type device struct {
 	Name   string `json:"name"`
 }
 
+type devices struct {
+	Devs []device `json:"devices"`
+}
+
 type mutexDB struct {
 	mutex    *sync.Mutex
 	sqliteDB *sql.DB
@@ -130,6 +134,28 @@ func (md *mutexDB) getDevice(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(d)
 }
 
+func (md *mutexDB) getEveryDevice(w http.ResponseWriter, r *http.Request) {
+
+	log.Println("Getting all devices")
+	qSelect := `SELECT id, status, name FROM devices`
+	rows, err := md.sqliteDB.Query(qSelect)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+	var dev = devices{Devs: make([]device, 0)}
+	for rows.Next() {
+		var d device
+		rows.Scan(&d.ID, &d.Status, &d.Name)
+		dev.Devs = append(dev.Devs, d)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(dev)
+}
+
 func main() {
 	fmt.Println("hey")
 	os.Remove("devices.db")
@@ -153,6 +179,7 @@ func main() {
 	mutexDB := &mutexDB{mutex: &m, sqliteDB: sqliteDB}
 
 	router := mux.NewRouter()
+	router.HandleFunc("/", mutexDB.getEveryDevice).Methods(http.MethodGet)
 	router.HandleFunc("/", mutexDB.createDevice).Methods(http.MethodPut)
 	router.HandleFunc("/{id}", mutexDB.updateDevice).Methods(http.MethodPut)
 	router.HandleFunc("/{id}", mutexDB.getDevice).Methods(http.MethodGet)
