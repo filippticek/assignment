@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/mux"
@@ -46,7 +47,7 @@ func (md *mutexDB) createDevice(w http.ResponseWriter, r *http.Request) {
 	md.mutex.Lock()
 	defer md.mutex.Unlock()
 
-	log.Println("Creating device")
+	log.Println("Creating device Id: " + strconv.Itoa(d.ID))
 	//Create INSERT statement
 	insert := `INSERT INTO devices(id, status, name) VALUES (?, ?, ?)`
 	statement, err := md.sqliteDB.Prepare(insert)
@@ -59,7 +60,7 @@ func (md *mutexDB) createDevice(w http.ResponseWriter, r *http.Request) {
 	//Execute statement and return status code depending on the success
 	_, err = statement.Exec(d.ID, d.Status, d.Name)
 	if err != nil {
-		log.Println(err)
+		log.Println(err.Error() + " " + strconv.Itoa(d.ID))
 		w.WriteHeader(http.StatusConflict)
 		return
 	}
@@ -86,7 +87,7 @@ func (md *mutexDB) updateDevice(w http.ResponseWriter, r *http.Request) {
 	md.mutex.Lock()
 	defer md.mutex.Unlock()
 
-	log.Println("Updating device")
+	log.Println("Updating device ID: " + id)
 	//Create UPDATE statement
 	update := `UPDATE devices SET id=?, status=?, name=? WHERE id=?`
 	statement, err := md.sqliteDB.Prepare(update)
@@ -118,7 +119,7 @@ func (md *mutexDB) deleteDevice(w http.ResponseWriter, r *http.Request) {
 	md.mutex.Lock()
 	defer md.mutex.Unlock()
 
-	log.Println("Deleting device")
+	log.Println("Deleting device ID: " + id)
 	//Create DELETE statement
 	del := `DELETE FROM devices WHERE id=?`
 	statement, err := md.sqliteDB.Prepare(del)
@@ -144,7 +145,7 @@ func (md *mutexDB) getDevice(w http.ResponseWriter, r *http.Request) {
 	param := mux.Vars(r)
 	id := param["id"]
 
-	log.Println("Getting device")
+	log.Println("Getting device ID: " + id)
 	//Create SELECT query and populate device struct
 	qSelect := `SELECT id, status, name FROM devices WHERE id=?`
 	err := md.sqliteDB.QueryRow(qSelect, id).Scan(&d.ID, &d.Status, &d.Name)
@@ -186,7 +187,8 @@ func (md *mutexDB) getEveryDevice(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-
+	log.Println("Starting application")
+	log.Println("Initializing database")
 	os.Remove("devices.db")              //Delete db file for a fresh start
 	file, err := os.Create("devices.db") // Create SQLite file
 	if err != nil {
@@ -200,6 +202,7 @@ func main() {
 	}
 	defer sqliteDB.Close()
 	//Create table devices
+	log.Println("Creating TABLE")
 	statement, err := sqliteDB.Prepare("CREATE TABLE devices (id INTEGER PRIMARY KEY, status INTEGER CHECK (status IN (0,1)), name TEXT)")
 	if err != nil {
 		log.Fatal(err)
@@ -218,5 +221,6 @@ func main() {
 	router.HandleFunc("/{id}", mutexDB.getDevice).Methods(http.MethodGet)
 	router.HandleFunc("/{id}", mutexDB.deleteDevice).Methods(http.MethodDelete)
 
+	log.Println("Starting server port localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
