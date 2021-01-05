@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 func client(reqID int, method string, urlValue string, data string) {
@@ -19,27 +20,31 @@ func client(reqID int, method string, urlValue string, data string) {
 		Jar:           nil,
 		Timeout:       0,
 	}
-	log.Println("ID: " + strconv.Itoa(reqID) + " " + method + " " + urlValue + " " + data)
+	log.Println("ReqID: " + strconv.Itoa(reqID) + " " + method + " " + urlValue + " " + data)
 	var url = "http://localhost:8080/" + urlValue
 	req, err := http.NewRequest(method, url, strings.NewReader(data))
 	if data != " " {
 		req.Header.Add("Content-Type", "application/json")
+	}
+	if method == "GET" {
+		time.Sleep(10 * time.Millisecond)
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
 	resp, err := myClient.Do(req)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(strconv.Itoa(reqID) + err.Error())
+		return
 	}
-	var response = "RespID: " + strconv.Itoa(reqID) + " " + resp.Status
+	var response = "RespID: " + strconv.Itoa(reqID) + " ReqMethod" + method + " " + resp.Status
 	if resp.StatusCode == http.StatusOK {
 		response += " Content"
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(resp.Body)
+		response += buf.String()
 	}
 
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(resp.Body)
-	response += buf.String()
 	log.Println(response)
 }
 
