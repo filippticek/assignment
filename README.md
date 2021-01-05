@@ -1,4 +1,4 @@
-# First build container:
+# Build container:
 `docker build -t backend-server .`
 # Run container:
 `docker run -it --rm -p 8080:8080 backend-server:latest`
